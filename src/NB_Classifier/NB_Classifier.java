@@ -44,7 +44,7 @@ public class NB_Classifier {
 
         TrainClass(Class_Politics_Misc, "Class Politics.Misc");
 
-        BuildProbabilityOfClass();        
+        BuildProbabilityOfClass(); //testing       
 
         BuildProbabilityOfEvidence();
         
