@@ -25,87 +25,76 @@ public class NB_Classifier {
 
     public static int m_TotalNumberOfClasses;
     public static int m_TotalNumberofDocuments;
-    public static ArrayList<ProbabilityOfClass> pProbabilityOfClassVector;
     public static ArrayList<FeatureExtractor> pFeatures;
-
         
-    public static class ProbabilityOfClass{
-        String m_ClassName;
-        double m_Probability;
-        int m_NumberOfDocumentsTrainedForClass;
-
-        public ProbabilityOfClass(String ClassName){
-            m_ClassName = ClassName;
-            m_Probability = 0.0;
-            m_NumberOfDocumentsTrainedForClass = 0;
-        }
-    }   
-
     /**
      * @param args the command line arguments
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws IOException {
 
-        String Class_Politics_Guns      = "./20_newsgroups/talk.politics.guns";
-        String Class_Politics_Mideast   = "./20_newsgroups/talk.politics.mideast";
-        String Class_Politics_Misc      = "./20_newsgroups/talk.politics.misc";
+        String Class_Politics_Guns      = "./20_newsgroups_Train/talk.politics.guns";
+        String Class_Politics_Mideast   = "./20_newsgroups_Train/talk.politics.mideast";
+        String Class_Politics_Misc      = "./20_newsgroups_Train/talk.politics.misc";
         pFeatures                       = new ArrayList<FeatureExtractor>();
-        pProbabilityOfClassVector       = new ArrayList<ProbabilityOfClass>();        
-        m_TotalNumberofDocuments        = 0;
         
-        m_TotalNumberofDocuments += TrainClass(Class_Politics_Guns, "Class Politics.Guns");
-        m_TotalNumberOfClasses++;
+        TrainClass(Class_Politics_Guns, "Class Politics.Guns");
         
-        m_TotalNumberofDocuments += TrainClass(Class_Politics_Mideast, "Class Politics.Mideast");
-        m_TotalNumberOfClasses++;
+        TrainClass(Class_Politics_Mideast, "Class Politics.Mideast");
 
-        m_TotalNumberofDocuments += TrainClass(Class_Politics_Misc, "Class Politics.Misc");
-        m_TotalNumberOfClasses++;
+        TrainClass(Class_Politics_Misc, "Class Politics.Misc");
 
         BuildProbabilityOfClass();        
 
         BuildProbabilityOfEvidence();
         
-        System.out.println("Total Number of Documents: "+m_TotalNumberofDocuments);
-        System.out.println("Total Number of Classes: "+m_TotalNumberOfClasses);
         System.out.println("Done!");
     }
-    
+            
+    public static void TrainClass(String ClassPath, String ClassDescription) throws IOException {
+            
+        FeatureExtractor pFeatureExtractor          = new FeatureExtractor(ClassPath, ClassDescription);
+        pFeatureExtractor.TrainWithDocuments();
+
+        pFeatures.add(pFeatureExtractor);
+    }
+
     public static void BuildProbabilityOfClass(){
         
-        pProbabilityOfClassVector.forEach((vector) -> {
-            double prob = (double)vector.m_NumberOfDocumentsTrainedForClass / (double)m_TotalNumberofDocuments;
-            vector.m_Probability = prob;
+        pFeatures.forEach((vector) -> {
+            double prob = (double)vector.Vector.size() / (double)m_TotalNumberofDocuments;
+            vector.ProbabilityOfClass = prob;
         });
     }
         
     public static void BuildProbabilityOfEvidence(){
         HashMap<String, TokenObjectClass> FullTokenMap = new HashMap<String, TokenObjectClass>();
+        int TotalNumberOfDocuments = 0;
         
-        pFeatures.forEach((feature) -> {
-            feature.Vector.forEach((featureVector) -> {
-                HashMap<String, TokenObjectClass> TokenMap = featureVector.m_TokenMap;
-                Set set = TokenMap.entrySet();
-                                
-                Iterator iterator = set.iterator();
-                while(iterator.hasNext()) {
-                    Map.Entry mentry    = (Map.Entry)iterator.next();
-                    System.out.println(mentry.toString());
-                    if(FullTokenMap.containsKey(mentry.getKey())){
-                        TokenObjectClass token = (TokenObjectClass)FullTokenMap.get(mentry.getKey());
-                        System.out.println(token.GetWord());
-                        System.out.println(token.GetCount());
-                        token.SetCount(token.GetCount() + 1);
-                    }
-                    else{
-                        TokenObjectClass pToken = new TokenObjectClass((String)mentry.getKey(), 1);
-                        
-                        FullTokenMap.put((String)mentry.getKey(), pToken);
-                   }
+        for(int i=0; i<pFeatures.size(); i++){
+            FeatureExtractor feature = pFeatures.get(i);
+            TotalNumberOfDocuments += feature.Vector.size();
+        
+            System.out.println("\nShowing Bags of Words for document " + feature.m_ClassOfDocuments);
+            Set set             = feature.FullDocumentBagOfWords.m_TokenMap.entrySet();
+            Iterator iterator   = set.iterator();
+
+            while(iterator.hasNext()) {
+                Map.Entry mentry    = (Map.Entry)iterator.next();
+                TokenObjectClass token = (TokenObjectClass) mentry.getValue();
+
+                if(FullTokenMap.containsKey(token.GetWord())){
+                    TokenObjectClass tokenLocal = (TokenObjectClass)FullTokenMap.get(token.GetWord());
+                    tokenLocal.SetCount(tokenLocal.GetCount() + token.GetCount());
                 }
-            });
-        });
+                else{
+                    TokenObjectClass tokenLocal = feature.CreateNewTokenObject((String)mentry.getKey(), token.GetCount());
+                    FullTokenMap.put((String)mentry.getKey(), tokenLocal);
+                }
+                    
+                System.out.printf ("Word: %-15s exists in %-4d/%-4d of the documents. PoL:%-5.3f\n", token.GetWord(), token.GetCount(), feature.Vector.size(), token.GetPoL());
+            }
+        }
         
         HashMap<String, TokenObjectClass> SortedFullTokenMap = FeatureExtractor.sortByValues(FullTokenMap);
 
@@ -115,24 +104,10 @@ public class NB_Classifier {
         while(iterator.hasNext()) {
             Map.Entry mentry    = (Map.Entry)iterator.next();
             TokenObjectClass token = (TokenObjectClass)mentry.getValue();
-            double probabilityofevidence = (double)token.GetCount() / (double)NumberOfWordsInFullBag;
-            token.SetProbability((float)probabilityofevidence);
+            double probabilityofevidence = (double)token.GetCount() / (double)TotalNumberOfDocuments;
+            token.SetPoE((float)probabilityofevidence);
             
-            System.out.printf ("Word:%-15s existed in %-4d of the documents. Prob:%-5.3f\n", token.GetWord(), token.GetCount(), token.GetProbability());
+            System.out.printf ("%-15s exists in %-4d/%-4d of the documents. PoE:%-5.3f\n", token.GetWord(), token.GetCount(), TotalNumberOfDocuments, token.GetPoE());
         }
-    }
-    
-    public static int TrainClass(String ClassName, String ClassDescription) throws IOException {
-            
-        FeatureExtractor pFeatureExtractor          = new FeatureExtractor(ClassName);
-        //pFeatureExtractor.m_ClassOfDocuments      = ClassDescription;
-        ProbabilityOfClass pClass                   = new ProbabilityOfClass(ClassDescription);
-        int NumberOfDocumentsThisClass              = pFeatureExtractor.TrainWithDocuments();
-        pClass.m_NumberOfDocumentsTrainedForClass   = NumberOfDocumentsThisClass;
-
-        pProbabilityOfClassVector.add(pClass);
-        pFeatures.add(pFeatureExtractor);
-        return NumberOfDocumentsThisClass;
-    }
-    
+    }   
 }
