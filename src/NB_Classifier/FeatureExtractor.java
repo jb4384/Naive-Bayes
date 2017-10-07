@@ -5,28 +5,26 @@
  */
 package NB_Classifier;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import opennlp.tools.sentdetect.*;
+import javax.json.Json;
+import javax.json.JsonBuilderFactory;
+import javax.json.JsonObject;
 import opennlp.tools.tokenize.*;
-import opennlp.tools.util.Span;
-import opennlp.tools.lemmatizer.DictionaryLemmatizer;
+import opennlp.tools.postag.POSSample;
+import opennlp.tools.util.InputStreamFactory;
+import opennlp.tools.util.MarkableFileInputStreamFactory;
+import opennlp.tools.util.ObjectStream;
+import opennlp.tools.util.PlainTextByLineStream;
 
 /**
  *
@@ -40,16 +38,15 @@ public class FeatureExtractor {
     public DocumentObjectClass FullDocumentBagOfWords;
     public String m_ClassOfDocuments;
     public String m_ClassPath;
-    public double ProbabilityOfClass;    
-    public DictionaryLemmatizer lemmatizer;
+    public double ProbabilityOfClass;   
+    public ModelLoader model;
     
-    public FeatureExtractor(String Documents, String Description) throws IOException  {
+    public FeatureExtractor(String Documents, String Description, ModelLoader model) throws IOException  {
         m_ClassPath         = Documents;
         m_ClassOfDocuments  = Description;
-        Vector              = new ArrayList<DocumentObjectClass>();
-                        
-        FullDocumentBagOfWords = new DocumentObjectClass(new HashMap<String, TokenObjectClass>(), Documents, 0, "");
-        buildDictionary();
+        Vector              = new ArrayList<>();
+        FullDocumentBagOfWords = new DocumentObjectClass(new HashMap<>(), Documents, 0, "");
+        this.model = model;
     }
 
     public class TokenObjectClass{
@@ -75,6 +72,28 @@ public class FeatureExtractor {
             m_Word          = Word;
             m_Count         = Count;
             m_TermFrequency = new Float(0.0);
+            m_PoE           = new Float(0.0);
+            m_PoL           = new Float(0.0);
+        }
+ 
+        public TokenObjectClass(JsonObject json){
+            m_Word          = json.getString("m_Word");
+            m_Count         = Integer.valueOf(json.getString("m_Count"));
+            m_TermFrequency = Float.valueOf(json.getString("m_TermFrequency"));
+            m_PoE           = Float.valueOf(json.getString("m_PoE"));
+            m_PoL           = Float.valueOf(json.getString("m_PoL"));
+        }
+
+        public JsonObject getJsonObject(){     
+            JsonBuilderFactory factory = Json.createBuilderFactory(null);
+            JsonObject value = factory.createObjectBuilder()
+                .add("m_Word", m_Word)
+                .add("m_Count", m_Count.toString())
+                .add("m_TermFrequency", m_TermFrequency.toString())
+                .add("m_PoE", m_PoE.toString())
+                .add("m_PoL", m_PoL.toString())
+                .build();
+            return value;
         }
     }
     
@@ -94,15 +113,15 @@ public class FeatureExtractor {
         public DocumentObjectClass(HashMap<String, TokenObjectClass> TokenMap, String Document, int WordCount, String Classification){
             m_TokenMap              = TokenMap;
             m_DocumentName          = Document;
-            int m_WordsInDocument   = WordCount;
+            m_WordsInDocument   = WordCount;
             m_Classification        = Classification;
         }
     }
-   
+
     public void TrainWithDocuments() throws FileNotFoundException, IOException{
         File dir                = new File(m_ClassPath);
         File[] directoryListing = dir.listFiles();
-        HashMap<String, TokenObjectClass> m_FullMapForAllDocuments = new HashMap<String, TokenObjectClass>();
+        HashMap<String, TokenObjectClass> m_FullMapForAllDocuments = new HashMap<>();
 
         int numberofFiles = 0;
 
@@ -110,8 +129,46 @@ public class FeatureExtractor {
             for (File child : directoryListing) {
                 numberofFiles++;
                 System.out.println(numberofFiles+ "/" +directoryListing.length+ ". Reading "+ child.getPath());
-                
-                Scanner sc2 = null;
+                Map<String, Integer> keywords = new HashMap<>();
+                try {
+                    InputStreamFactory r = null;
+                    try {
+                        r = new MarkableFileInputStreamFactory(
+                           new File(child.getPath()));
+                    } catch (FileNotFoundException e) {}
+                    Map<String, Integer> nounSet = new HashMap<>();
+                    ObjectStream<String> lineStream = new PlainTextByLineStream(r,"UTF-8");
+
+                   String line;
+
+                   while ((line = lineStream.read()) != null) {
+                       if ("".equals(model.testRejection(line))) continue;
+                        String[] tokens = removeNull(SimpleTokenizer.INSTANCE.tokenize(line));
+                        String[] tags = model.tagger.tag(tokens);
+
+                        POSSample sample = new POSSample(tokens, tags);
+                       for (String sentence : sample.getSentence()) {
+                           String words[] = sample.getSentence();
+                           for (String word : words)
+                               word = word.toLowerCase();
+                           String posTags[] = sample.getTags();
+                           words = model.lemmatize(words, posTags);
+                           for (int i = 0; i < words.length; i++){
+                                if (words[i].length() > 2 && tags[i].matches("NN|NNP|NNS|NNPS")) {
+                                    int count = (nounSet.containsKey(words[i])) ? nounSet.get(words[i]) + 1 : 1;
+                                    nounSet.put(words[i], count);
+                                }
+                           }
+                       }
+                    }
+                   Map<String, Integer> sortedSet = mapSorter.sortByComparator(nounSet,true);
+                   sortedSet.entrySet().forEach((pair) -> {
+                       keywords.put(pair.getKey(), Integer.parseInt(pair.getValue().toString()));
+                    });
+                    System.out.println(keywords.toString());
+
+                } catch (IOException t) {}
+/*                Scanner sc2 = null;
                 
                 try {
                     sc2             = new Scanner(new File(child.getPath()));
@@ -133,19 +190,16 @@ public class FeatureExtractor {
                 
                     String word             = "";
                     
-                    HashMap<String, TokenObjectClass> m_Map = new HashMap<String, TokenObjectClass>();
-                    for(int i=0; i<tokens.length;i++)
-                    {
-                        String token = tokens[i];
+                    HashMap<String, TokenObjectClass> m_Map = new HashMap<>();
+                    for (String token : tokens) {
                         word = TrimWord(token);
-                        
                         if(word.isEmpty()) continue;
                         
                         TokenObjectClass m_Token = m_Map.get(word);
                         if(m_Token != null){
                             Integer count = m_Token.GetCount();
                             if (count >= 6) System.out.println(word+ " " + count);
-                            m_Token.SetCount((m_Map.containsKey(word)) ? new Integer(count.intValue() + 1) : new Integer(1));
+                            m_Token.SetCount((m_Map.containsKey(word)) ? count.intValue() + 1 : 1);
                         }
                         else{
                             TokenObjectClass pToken = new TokenObjectClass(word, 1);
@@ -171,10 +225,9 @@ public class FeatureExtractor {
                     Vector.add(pDoc);
                     
                 } catch (FileNotFoundException e) {
-                    e.printStackTrace();  
                 }
-            }
-        } else {
+            }*/
+        } /*else {
           // Handle the case where dir is not really a directory.
           // Checking dir.isDirectory() above would not be sufficient
           // to avoid race conditions with another process that deletes
@@ -198,10 +251,11 @@ public class FeatureExtractor {
                     TokenObjectClass newToken = new TokenObjectClass((String)mentry.getKey(), 1);
                     m_FullMapForAllDocuments.put((String)mentry.getKey(), newToken);
                 }
-            }
+            }*/
         }
+
         
-        Set set = m_FullMapForAllDocuments.entrySet();
+        /*Set set = m_FullMapForAllDocuments.entrySet();
         Iterator iterator = set.iterator();
 
         while(iterator.hasNext()) {
@@ -212,9 +266,17 @@ public class FeatureExtractor {
             token.SetPoL((float)PoL);
         }
         
-        FullDocumentBagOfWords.m_TokenMap = m_FullMapForAllDocuments;
+        FullDocumentBagOfWords.m_TokenMap = m_FullMapForAllDocuments;*/
     }
-        
+
+    public String[] removeNull(String[] a) {
+       ArrayList<String> removedNull = new ArrayList<String>();
+       for (String str : a)
+          if (str != null)
+             removedNull.add(str);
+       return removedNull.toArray(new String[0]);
+    }
+
     private String TrimWord(String word)
     {      
         word = word.toLowerCase();
@@ -259,14 +321,12 @@ public class FeatureExtractor {
         List list = new LinkedList(map.entrySet());
         
         // Defined Custom Comparator here
-        Collections.sort(list, new Comparator() {
-            public int compare(Object o1, Object o2) {
-                Map.Entry<String, TokenObjectClass> Token1 = (Map.Entry<String, TokenObjectClass>)o1;
-                Map.Entry<String, TokenObjectClass> Token2 = (Map.Entry<String, TokenObjectClass>)o2;
-                
-                return (int) ((Comparable) (((TokenObjectClass)Token2.getValue()).m_Count).compareTo(((TokenObjectClass)Token1.getValue()).m_Count));
-            }
-       });
+        Collections.sort(list, (Object o1, Object o2) -> {
+            Map.Entry<String, TokenObjectClass> Token1 = (Map.Entry<String, TokenObjectClass>)o1;
+            Map.Entry<String, TokenObjectClass> Token2 = (Map.Entry<String, TokenObjectClass>)o2;
+            
+            return (int) ((Comparable) (((TokenObjectClass)Token2.getValue()).m_Count).compareTo(((TokenObjectClass)Token1.getValue()).m_Count));
+        });
         
        HashMap sortedHashMap = new LinkedHashMap();
        for (Iterator it = list.iterator(); it.hasNext();) {
@@ -275,11 +335,4 @@ public class FeatureExtractor {
        } 
        return sortedHashMap;
     }  
-    
-    private void buildDictionary() throws FileNotFoundException, IOException{
-          // loading the dictionary to input stream
-        InputStream dictLemmatizer = new FileInputStream("./dictionary.txt");
-        // loading the lemmatizer with dictionary
-        lemmatizer = new DictionaryLemmatizer(dictLemmatizer);
-   }
-}
+    }
