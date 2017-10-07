@@ -1,0 +1,13 @@
+Xref
+Newsgroups
+Path
+From
+Subject
+Organization
+Distribution
+Date
+Message-ID
+Followup-To
+X-Newsreader
+References
+Lines
