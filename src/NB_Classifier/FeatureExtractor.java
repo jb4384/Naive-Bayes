@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.json.Json;
@@ -33,7 +34,7 @@ import opennlp.tools.util.PlainTextByLineStream;
 
 public class FeatureExtractor {
 
-    public String stopwords[] = {"jan", "feb", "mar", "apr", "may", "june", "july", "aug", "sept", "oct", "nov", "dec", "mon", "tue", "wed", "thur", "fri", "sat", "sun", "edu", "a", "about", "above", "above", "across", "after", "afterwards", "again", "against", "all", "almost", "alone", "along", "already", "also","although","always","am","among", "amongst", "amoungst", "amount",  "an", "and", "another", "any","anyhow","anyone","anything","anyway", "anywhere", "are", "around", "as",  "at", "back","be","became", "because","become","becomes", "becoming", "been", "before", "beforehand", "behind", "being", "below", "beside", "besides", "between", "beyond", "bill", "both", "bottom","but", "by", "call", "can", "cannot", "cant", "co", "con", "could", "couldnt", "cry", "de", "describe", "detail", "do", "done", "down", "due", "during", "each", "eg", "eight", "either", "eleven","else", "elsewhere", "empty", "enough", "etc", "even", "ever", "every", "everyone", "everything", "everywhere", "except", "few", "fifteen", "fify", "fill", "find", "fire", "first", "five", "for", "former", "formerly", "forty", "found", "four", "from", "front", "full", "further", "get", "give", "go", "had", "has", "hasnt", "have", "he", "hence", "her", "here", "hereafter", "hereby", "herein", "hereupon", "hers", "herself", "him", "himself", "his", "how", "however", "hundred", "ie", "if", "in", "inc", "indeed", "interest", "into", "is", "it", "its", "itself", "keep", "last", "latter", "latterly", "least", "less", "ltd", "made", "many", "may", "me", "meanwhile", "might", "mill", "mine", "more", "moreover", "most", "mostly", "move", "much", "must", "my", "myself", "name", "namely", "neither", "never", "nevertheless", "next", "nine", "no", "nobody", "none", "noone", "nor", "not", "nothing", "now", "nowhere", "of", "off", "often", "on", "once", "one", "only", "onto", "or", "other", "others", "otherwise", "our", "ours", "ourselves", "out", "over", "own","part", "per", "perhaps", "please", "put", "rather", "re", "same", "see", "seem", "seemed", "seeming", "seems", "serious", "several", "she", "should", "show", "side", "since", "sincere", "six", "sixty", "so", "some", "somehow", "someone", "something", "sometime", "sometimes", "somewhere", "still", "such", "system", "take", "ten", "than", "that", "the", "their", "them", "themselves", "then", "thence", "there", "thereafter", "thereby", "therefore", "therein", "thereupon", "these", "they", "thickv", "thin", "third", "this", "those", "though", "three", "through", "throughout", "thru", "thus", "to", "together", "too", "top", "toward", "towards", "twelve", "twenty", "two", "un", "under", "until", "up", "upon", "us", "very", "via", "was", "we", "well", "were", "what", "whatever", "when", "whence", "whenever", "where", "whereafter", "whereas", "whereby", "wherein", "whereupon", "wherever", "whether", "which", "while", "whither", "who", "whoever", "whole", "whom", "whose", "why", "will", "with", "within", "without", "would", "yet", "you", "your", "yours", "yourself", "yourselves", "the", "2000", "faq", };     
+    public String stopwords[] = {"article", "jan", "feb", "mar", "apr", "may", "june", "july", "aug", "sept", "oct", "nov", "dec", "mon", "tue", "wed", "thur", "fri", "sat", "sun", "edu", "a", "about", "above", "above", "across", "after", "afterwards", "again", "against", "all", "almost", "alone", "along", "already", "also","although","always","am","among", "amongst", "amoungst", "amount",  "an", "and", "another", "any","anyhow","anyone","anything","anyway", "anywhere", "are", "around", "as",  "at", "back","be","became", "because","become","becomes", "becoming", "been", "before", "beforehand", "behind", "being", "below", "beside", "besides", "between", "beyond", "bill", "both", "bottom","but", "by", "call", "can", "cannot", "cant", "co", "con", "could", "couldnt", "cry", "de", "describe", "detail", "do", "done", "down", "due", "during", "each", "eg", "eight", "either", "eleven","else", "elsewhere", "empty", "enough", "etc", "even", "ever", "every", "everyone", "everything", "everywhere", "except", "few", "fifteen", "fify", "fill", "find", "fire", "first", "five", "for", "former", "formerly", "forty", "found", "four", "from", "front", "full", "further", "get", "give", "go", "had", "has", "hasnt", "have", "he", "hence", "her", "here", "hereafter", "hereby", "herein", "hereupon", "hers", "herself", "him", "himself", "his", "how", "however", "hundred", "ie", "if", "in", "inc", "indeed", "interest", "into", "is", "it", "its", "itself", "keep", "last", "latter", "latterly", "least", "less", "ltd", "made", "many", "may", "me", "meanwhile", "might", "mill", "mine", "more", "moreover", "most", "mostly", "move", "much", "must", "my", "myself", "name", "namely", "neither", "never", "nevertheless", "next", "nine", "no", "nobody", "none", "noone", "nor", "not", "nothing", "now", "nowhere", "of", "off", "often", "on", "once", "one", "only", "onto", "or", "other", "others", "otherwise", "our", "ours", "ourselves", "out", "over", "own","part", "per", "perhaps", "please", "put", "rather", "re", "same", "see", "seem", "seemed", "seeming", "seems", "serious", "several", "she", "should", "show", "side", "since", "sincere", "six", "sixty", "so", "some", "somehow", "someone", "something", "sometime", "sometimes", "somewhere", "still", "such", "system", "take", "ten", "than", "that", "the", "their", "them", "themselves", "then", "thence", "there", "thereafter", "thereby", "therefore", "therein", "thereupon", "these", "they", "thickv", "thin", "third", "this", "those", "though", "three", "through", "throughout", "thru", "thus", "to", "together", "too", "top", "toward", "towards", "twelve", "twenty", "two", "un", "under", "until", "up", "upon", "us", "very", "via", "was", "we", "well", "were", "what", "whatever", "when", "whence", "whenever", "where", "whereafter", "whereas", "whereby", "wherein", "whereupon", "wherever", "whether", "which", "while", "whither", "who", "whoever", "whole", "whom", "whose", "why", "will", "with", "within", "without", "would", "yet", "you", "your", "yours", "yourself", "yourselves", "the", "2000", "faq", };     
     public ArrayList<DocumentObjectClass> Vector; 
     public DocumentObjectClass FullDocumentBagOfWords;
     public String m_ClassOfDocuments;
@@ -118,159 +119,143 @@ public class FeatureExtractor {
         }
     }
 
-    public void TrainWithDocuments() throws FileNotFoundException, IOException{
+    public DocumentObjectClass GetBagOfWords(String Path){
+        
+        //HashMap<String, Integer> keywords = new HashMap<>();
+        try {
+            InputStreamFactory r = null;
+            try {
+                r = new MarkableFileInputStreamFactory(
+                   new File(Path));
+            } catch (FileNotFoundException e) {}
+            Map<String, Integer> nounSet = new HashMap<>();
+            ObjectStream<String> lineStream = new PlainTextByLineStream(r,"UTF-8");
+
+           String line;
+
+           while ((line = lineStream.read()) != null) {
+               if ("".equals(model.testRejection(line))) continue;
+                String[] tokens = removeNull(SimpleTokenizer.INSTANCE.tokenize(line));
+                String[] tags = model.tagger.tag(tokens);
+
+                POSSample sample = new POSSample(tokens, tags);
+               for (String sentence : sample.getSentence()) {
+                   String words[] = sample.getSentence();
+                   for (String word : words)
+                       word = word.toLowerCase();
+                   String posTags[] = sample.getTags();
+                   words = model.lemmatize(words, posTags);
+                   for (int i = 0; i < words.length; i++){
+                        if (words[i].length() > 2 && tags[i].matches("NN|NNP|NNS|NNPS")) {
+                            int count = (nounSet.containsKey(words[i])) ? nounSet.get(words[i]) + 1 : 1;
+                            nounSet.put(words[i], count);
+                        }
+                   }
+               }
+            }
+
+            Map<String, Integer> sortedSet = mapSorter.sortByComparator(nounSet,true);
+            HashMap<String, TokenObjectClass> TokenMap = new HashMap<>();
+
+            sortedSet.entrySet().forEach((pair) -> {
+               TokenObjectClass tokenObject = new TokenObjectClass(pair.getKey(), Integer.parseInt(pair.getValue().toString()));
+               TokenMap.put(pair.getKey(), tokenObject);
+
+               //keywords.put(pair.getKey(), Integer.parseInt(pair.getValue().toString()));
+            });
+
+            HashMap sortSet = sortByValues(TokenMap);
+
+            Set set = sortSet.entrySet();
+            Iterator iterator = set.iterator();
+
+            while(iterator.hasNext()) {
+                Map.Entry mentry            = (Map.Entry)iterator.next();
+                TokenObjectClass pToken    = (TokenObjectClass) mentry.getValue();
+                int value                   = (int)pToken.m_Count;
+                pToken.m_TermFrequency      = 100*(value / (float)sortedSet.size());
+            }
+
+            return new DocumentObjectClass(sortSet, Path, TokenMap.size(), m_ClassOfDocuments);
+
+        } catch (IOException t) { return null; }
+    }
+    
+    public HashMap<String, TokenObjectClass> GetFullMapForAllDocuments(){
+        
+        HashMap<String, TokenObjectClass> m_FullMapForAllDocuments = new HashMap<>();
+        for(int i=0; i<Vector.size(); i++)
+        {
+            DocumentObjectClass pDoc = Vector.get(i);
+            Set set = pDoc.m_TokenMap.entrySet();
+            Iterator iterator = set.iterator();
+
+            while(iterator.hasNext()) {
+                Map.Entry mentry = (Map.Entry)iterator.next();
+                TokenObjectClass token = (TokenObjectClass) mentry.getValue();
+
+                if(m_FullMapForAllDocuments.containsKey(token.GetWord())){
+                    TokenObjectClass token2 = m_FullMapForAllDocuments.get(mentry.getKey());
+                    double TermFrequency = token.m_TermFrequency;
+                    double TermFrequency2 = token2.m_TermFrequency;
+                    
+                    token2.SetCount(token2.GetCount() + 1);
+                    token2.SetTermFrequency(new Float(TermFrequency + TermFrequency2));
+                }
+                else{
+                    TokenObjectClass newToken = new TokenObjectClass((String)mentry.getKey(), 1);
+                    newToken.m_TermFrequency = token.GetTermFrequency();
+                    m_FullMapForAllDocuments.put((String)mentry.getKey(), newToken);
+                }
+            }
+        }
+        
+        Set set = m_FullMapForAllDocuments.entrySet();
+        Iterator iterator = set.iterator();
+
+        while(iterator.hasNext()) {
+            Map.Entry mentry = (Map.Entry)iterator.next();
+            TokenObjectClass token = (TokenObjectClass) mentry.getValue();
+
+            double PoL = (double)token.GetTermFrequency() /(double) Vector.size();
+            token.SetPoL((float)PoL);
+        }
+        
+        return m_FullMapForAllDocuments;
+    }
+
+    public int TrainWithDocuments() throws FileNotFoundException, IOException{
         File dir                = new File(m_ClassPath);
         File[] directoryListing = dir.listFiles();
-        HashMap<String, TokenObjectClass> m_FullMapForAllDocuments = new HashMap<>();
 
         int numberofFiles = 0;
 
         if (directoryListing != null) {
             for (File child : directoryListing) {
                 numberofFiles++;
-                System.out.println(numberofFiles+ "/" +directoryListing.length+ ". Reading "+ child.getPath());
-                Map<String, Integer> keywords = new HashMap<>();
-                try {
-                    InputStreamFactory r = null;
-                    try {
-                        r = new MarkableFileInputStreamFactory(
-                           new File(child.getPath()));
-                    } catch (FileNotFoundException e) {}
-                    Map<String, Integer> nounSet = new HashMap<>();
-                    ObjectStream<String> lineStream = new PlainTextByLineStream(r,"UTF-8");
-
-                   String line;
-
-                   while ((line = lineStream.read()) != null) {
-                       if ("".equals(model.testRejection(line))) continue;
-                        String[] tokens = removeNull(SimpleTokenizer.INSTANCE.tokenize(line));
-                        String[] tags = model.tagger.tag(tokens);
-
-                        POSSample sample = new POSSample(tokens, tags);
-                       for (String sentence : sample.getSentence()) {
-                           String words[] = sample.getSentence();
-                           for (String word : words)
-                               word = word.toLowerCase();
-                           String posTags[] = sample.getTags();
-                           words = model.lemmatize(words, posTags);
-                           for (int i = 0; i < words.length; i++){
-                                if (words[i].length() > 2 && tags[i].matches("NN|NNP|NNS|NNPS")) {
-                                    int count = (nounSet.containsKey(words[i])) ? nounSet.get(words[i]) + 1 : 1;
-                                    nounSet.put(words[i], count);
-                                }
-                           }
-                       }
-                    }
-                   Map<String, Integer> sortedSet = mapSorter.sortByComparator(nounSet,true);
-                   sortedSet.entrySet().forEach((pair) -> {
-                       keywords.put(pair.getKey(), Integer.parseInt(pair.getValue().toString()));
-                    });
-                    System.out.println(keywords.toString());
-
-                } catch (IOException t) {}
-/*                Scanner sc2 = null;
                 
-                try {
-                    sc2             = new Scanner(new File(child.getPath()));
-                    String document = "";
-                    while (sc2.hasNextLine()) {
-                        document += " "+sc2.nextLine();
-                    }
-                            
-                    document = document.replaceAll("/"," ");
-                    String stopWordsPattern = String.join("|", stopwords);
-                    Pattern pattern         = Pattern.compile("\\b(?:" + stopWordsPattern + ")\\b\\s*", Pattern.CASE_INSENSITIVE);
-                    Matcher matcher         = pattern.matcher(document);
-                    document                = matcher.replaceAll("");
-
-                    WhitespaceTokenizer whitespaceTokenizer = WhitespaceTokenizer.INSTANCE;  
-       
-                    //Tokenizing the given paragraph 
-                    String tokens[] = whitespaceTokenizer.tokenize(document);
+                //System.out.println(numberofFiles+ "/" +directoryListing.length+ ". Reading "+ child.getPath());
                 
-                    String word             = "";
-                    
-                    HashMap<String, TokenObjectClass> m_Map = new HashMap<>();
-                    for (String token : tokens) {
-                        word = TrimWord(token);
-                        if(word.isEmpty()) continue;
-                        
-                        TokenObjectClass m_Token = m_Map.get(word);
-                        if(m_Token != null){
-                            Integer count = m_Token.GetCount();
-                            if (count >= 6) System.out.println(word+ " " + count);
-                            m_Token.SetCount((m_Map.containsKey(word)) ? count.intValue() + 1 : 1);
-                        }
-                        else{
-                            TokenObjectClass pToken = new TokenObjectClass(word, 1);
-                            m_Map.put(word, pToken);
-                        }
-                    }
+                DocumentObjectClass docObject = GetBagOfWords(child.getPath());
+                Vector.add(docObject);
 
-                    HashMap<String, TokenObjectClass> SortedMap = sortByValues(m_Map);
-                    
-                    DocumentObjectClass pDoc = new DocumentObjectClass(SortedMap, child.getName(), SortedMap.size(), m_ClassOfDocuments);
-
-                    Set set = SortedMap.entrySet();
-                    Iterator iterator = set.iterator();
-                    int WordCount = SortedMap.size();
-                    
-                    while(iterator.hasNext()) {
-                        Map.Entry mentry        = (Map.Entry)iterator.next();
-                        TokenObjectClass pToken = (TokenObjectClass) mentry.getValue();
-                        int value               = (int)pToken.m_Count;
-                        pToken.m_TermFrequency  = 100*(value / (float)WordCount);
-                    }
-                    
-                    Vector.add(pDoc);
-                    
-                } catch (FileNotFoundException e) {
-                }
-            }*/
-        } /*else {
-          // Handle the case where dir is not really a directory.
-          // Checking dir.isDirectory() above would not be sufficient
-          // to avoid race conditions with another process that deletes
-          // directories.
-        }  
-        for(int i=0; i<Vector.size(); i++)
-        {
-            DocumentObjectClass pDoc = Vector.get(i);
-            Set set = pDoc.m_TokenMap.entrySet();
-            Iterator iterator = set.iterator();
-                    
-            while(iterator.hasNext()) {
-                Map.Entry mentry = (Map.Entry)iterator.next();
-                TokenObjectClass token = (TokenObjectClass) mentry.getValue();
-                
-                if(m_FullMapForAllDocuments.containsKey(token.GetWord())){
-                    TokenObjectClass token2 = m_FullMapForAllDocuments.get(mentry.getKey());
-                    token2.SetCount(token2.GetCount() + 1);
-                }
-                else{
-                    TokenObjectClass newToken = new TokenObjectClass((String)mentry.getKey(), 1);
-                    m_FullMapForAllDocuments.put((String)mentry.getKey(), newToken);
-                }
-            }*/
-        }
-
-        
-        /*Set set = m_FullMapForAllDocuments.entrySet();
-        Iterator iterator = set.iterator();
-
-        while(iterator.hasNext()) {
-            Map.Entry mentry = (Map.Entry)iterator.next();
-            TokenObjectClass token = (TokenObjectClass) mentry.getValue();
+            }
             
-            double PoL = (double)token.GetCount() /(double) Vector.size();
-            token.SetPoL((float)PoL);
+            HashMap<String, TokenObjectClass> m_FullMapForAllDocuments = GetFullMapForAllDocuments();
+            
+            FullDocumentBagOfWords.m_TokenMap = m_FullMapForAllDocuments;
         }
         
-        FullDocumentBagOfWords.m_TokenMap = m_FullMapForAllDocuments;*/
+        return numberofFiles;
+        
     }
 
+    public void Test(HashMap<String, Float> ProbMap, String Path, String ClassDescription){
+    
+    }
+    
     public String[] removeNull(String[] a) {
-       ArrayList<String> removedNull = new ArrayList<String>();
+       ArrayList<String> removedNull = new ArrayList<>();
        for (String str : a)
           if (str != null)
              removedNull.add(str);
@@ -335,4 +320,4 @@ public class FeatureExtractor {
        } 
        return sortedHashMap;
     }  
-    }
+}
