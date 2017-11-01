@@ -1,0 +1,3 @@
+Class_Politics_Guns="./20_newsgroups_Train - Small/talk.politics.guns"
+Class_Politics_Mideast="./20_newsgroups_Train - Small/talk.politics.mideast"
+Class_Politics_Misc="./20_newsgroups_Train - Small/talk.politics.misc"
