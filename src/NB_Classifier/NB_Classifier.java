@@ -34,7 +34,7 @@ public class NB_Classifier{
      * @param args the command line arguments
      * @throws java.io.IOException
      */
-    public static void main(String[] args) throws IOException {
+   /* public static void main(String[] args) throws IOException {
         model = new ModelLoader();
         Accuracy = new AccuracyClass(0,0,0,0);
         
@@ -60,14 +60,7 @@ public class NB_Classifier{
         
         //Let's test this to see how well it can classify articles into guns
         TestClassifier(Class_Politics_Guns_Test, "Class Politics.Guns", true);
-        TestClassifier(Class_Politics_Guns_Test, "Class Politics.Mideast", false);
-        TestClassifier(Class_Politics_Guns_Test, "Class Politics.Misc", false);
-        TestClassifier(Class_Politics_Mideast_Test, "Class Politics.Mideast", true);
-        TestClassifier(Class_Politics_Mideast_Test, "Class Politics.Guns", false);
-        TestClassifier(Class_Politics_Mideast_Test, "Class Politics.Misc", false);
-        TestClassifier(Class_Politics_Misc_Test, "Class Politics.Misc", true);
         TestClassifier(Class_Politics_Misc_Test, "Class Politics.Guns", false);
-        TestClassifier(Class_Politics_Misc_Test, "Class Politics.Mideast", false);
 
         System.out.println("Total Accuracy :" + Accuracy.TotalAccuracy());
         System.out.println("Sensitivity :" + Accuracy.GetSensitivity());
@@ -79,18 +72,18 @@ public class NB_Classifier{
         System.out.println("False Positive: "+Accuracy.m_FalsePositive);
         System.out.println("False Negative: "+Accuracy.m_FalseNegative);
         System.out.println("Done!");
-    }
+    }*/
             
     public static void TrainClass(String ClassPath, String ClassDescription) throws IOException {
         FeatureExtractor pFeatureExtractor          = new FeatureExtractor(ClassPath, ClassDescription, model);
-        m_TotalNumberofDocuments += pFeatureExtractor.TrainWithDocuments();
+        m_TotalNumberofDocuments += pFeatureExtractor.TrainWithDocuments("NB");
 
         pFeatures.add(pFeatureExtractor);
     }
     
     public static void TestClassifier(String ClassPath, String ClassDescription, boolean TrueHypothesis) throws IOException {
         FeatureExtractor pFeatureExtractor          = new FeatureExtractor(ClassPath, ClassDescription, model);
-        pFeatureExtractor.TrainWithDocuments();
+        pFeatureExtractor.TrainWithDocuments("NB");
                 
         for(int i=0; i<pFeatureExtractor.Vector.size(); i++){
             
@@ -124,7 +117,7 @@ public class NB_Classifier{
                     //It may find it. If it does we can get the PoL calculation. 
                     if(pFoundToken != null){
                         Total *= (double) pFoundToken.GetPoL();
-                        //System.out.println("P("+(String)mentry.getKey()+"|"+pLocalFeature.m_ClassOfDocuments+") = "+(double) pFoundToken.GetPoL());
+                        System.out.println("P("+(String)mentry.getKey()+"|"+pLocalFeature.m_ClassOfDocuments+") = "+(double) pFoundToken.GetPoL());
                     }
                     //else
                         //Total *= 0.0;
@@ -150,13 +143,13 @@ public class NB_Classifier{
             System.out.println(LikelyClass);
             
             if(TrueHypothesis){
-                if(LikelyClass.equals(ClassDescription))
+                if(LikelyClass == ClassDescription)
                     Accuracy.m_TruePositive++;
                 else
                     Accuracy.m_FalseNegative++;
             }
             else{
-                if(LikelyClass.equals(ClassDescription))
+                if(LikelyClass == ClassDescription)
                     Accuracy.m_FalsePositive++;
                 else
                     Accuracy.m_TrueNegative++;
@@ -205,7 +198,7 @@ public class NB_Classifier{
                 }
                 json.addBuilder(tokenLocal.getJsonObject());
                     
-                //System.out.printf ("Word: %-15s exists in %-4d/%-4d of the documents. PoL:%-5.3f: %-15s\n", token.GetWord(), token.GetCount(), feature.Vector.size(), token.GetPoL(), feature.m_ClassPath);
+                System.out.printf ("Word: %-15s exists in %-4d/%-4d of the documents. PoL:%-5.3f: %-15s\n", token.GetWord(), token.GetCount(), feature.Vector.size(), token.GetPoL(), feature.m_ClassPath);
             }
             json.build();
             json.write("./json/",(feature.m_ClassOfDocuments).split("\\s+")[1]);
@@ -225,7 +218,7 @@ public class NB_Classifier{
                        
             json.addBuilder(token.getJsonObject());
             
-            //System.out.printf ("%-15s exists in %-4d/%-4d of the documents. PoE:%-5.3f\n", token.GetWord(), token.GetCount(), TotalNumberOfDocuments, token.GetPoE());
+            System.out.printf ("%-15s exists in %-4d/%-4d of the documents. PoE:%-5.3f\n", token.GetWord(), token.GetCount(), TotalNumberOfDocuments, token.GetPoE());
         }
         json.build();
         json.write("./json/","bag.of.words");
